@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>📊 NBA Predictor - Stats</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h2 {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .big-stat {
+            font-size: 72px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin: 30px 0;
+            line-height: 1;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 16px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .back-btn:active {
+            transform: scale(0.98);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge.danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .day-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .day-card.best {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            transition: transform 0.2s;
+            border: none;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95) rotate(180deg);
+        }
+
+        @media (max-width: 600px) {
+            .big-stat {
+                font-size: 56px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Prediction Stats</h1>
+            <p>Deine NBA Vorhersage-Genauigkeit</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Lade Statistiken...</div>
+        </div>
+
+        <div id="statsContainer" style="display: none;">
+            <div class="stat-card">
+                <h2>🎯 Gesamt-Accuracy</h2>
+                <div class="big-stat" id="accuracy">0%</div>
+                <div class="stat-row">
+                    <span class="stat-label">Korrekte Vorhersagen</span>
+                    <span class="stat-value" id="correct">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Gesamt-Vorhersagen</span>
+                    <span class="stat-value" id="total">0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h2>📅 Letzte 7 Tage</h2>
+                <div id="last7days"></div>
+            </div>
+
+            <div class="stat-card">
+                <h2>🏆 Performance</h2>
+                <div id="performance"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="index.html" class="back-btn">← Zurück zur App</a>
+            </div>
+        </div>
+
+        <div id="emptyState" style="display: none;">
+            <div class="stat-card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎯</div>
+                    <h3 style="margin-bottom: 10px; color: #333;">Noch keine Vorhersagen</h3>
+                    <p style="margin-bottom: 20px;">Mache deine erste Vorhersage um Stats zu sehen!</p>
+                    <a href="index.html" class="back-btn">Zur App</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadStats()" title="Aktualisieren">🔄</button>
+
+    <script>
+        const API_URL = 'https://web-production-2867b.up.railway.app/api';
+
+        async function loadStats() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('statsContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'none';
+
+                const response = await fetch(`${API_URL}/prediction-stats`);
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.stats.total_predictions === 0) {
+                        showEmptyState();
+                    } else {
+                        displayStats(data.stats);
+                    }
+                }
+            } catch (error) {
+                showError('Backend nicht erreichbar');
+            }
+        }
+
+        function displayStats(stats) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('statsContainer').style.display = 'block';
+
+            document.getElementById('accuracy').textContent = (stats.accuracy || 0) + '%';
+            document.getElementById('correct').textContent = stats.correct_predictions || 0;
+            document.getElementById('total').textContent = stats.total_predictions || 0;
+            document.getElementById('progressBar').style.width = (stats.accuracy || 0) + '%';
+
+            const last7div = document.getElementById('last7days');
+            last7div.innerHTML = '';
+
+            if (stats.last_7_days && stats.last_7_days.length > 0) {
+                stats.last_7_days.forEach(day => {
+                    const isBest = stats.best_day && day.date === stats.best_day.date;
+                    const badge = day.accuracy >= 70 ? 'success' : day.accuracy >= 50 ? 'warning' : 'danger';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'day-card' + (isBest ? ' best' : '');
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">
+                                ${day.date} ${isBest ? '🏆' : ''}
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                ${day.correct}/${day.total} Vorhersagen
+                            </div>
+                        </div>
+                        <span class="badge ${badge}">${day.accuracy}%</span>
+                    `;
+                    last7div.appendChild(div);
+                });
+            } else {
+                last7div.innerHTML = '<p style="color: #999; text-align: center;">Noch keine Daten</p>';
+            }
+
+            const perfDiv = document.getElementById('performance');
+            perfDiv.innerHTML = '';
+
+            if (stats.best_day) {
+                perfDiv.innerHTML = `
+                    <div class="stat-row">
+                        <span class="stat-label">🏆 Bester Tag</span>
+                        <span class="stat-value">${stats.best_day.date} (${stats.best_day.accuracy}%)</span>
+                    </div>
+                `;
+            }
+
+            if (stats.worst_day && stats.worst_day.date !== stats.best_day?.date) {
+                perfDiv.innerHTML += `
+                    <div class="stat-row">
+                        <span class="stat-label">📉 Schlechtester Tag</span>
+                        <span class="stat-value">${stats.worst_day.date} (${stats.worst_day.accuracy}%)</span>
+                    </div>
+                `;
+            }
+
+            if (!stats.best_day) {
+                perfDiv.innerHTML = '<p style="color: #999; text-align: center;">Noch keine Daten</p>';
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').innerHTML = `
+                <div class="loading-text">⚠️ ${msg}<br><br>
+                <a href="index.html" class="back-btn">← Zurück</a></div>
+            `;
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>
