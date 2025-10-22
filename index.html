@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>🏀 NBA Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .step-indicator {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .game-selection {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .game-selection h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .game-card {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .game-card:active {
+            transform: scale(0.98);
+        }
+
+        .game-card.selected {
+            background: linear-gradient(135deg, #90EE90 0%, #66BB6A 100%);
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        .game-matchup {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .game-time {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .team-card.show {
+            display: block;
+        }
+
+        .team-card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .player-slot {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .player-slot:active {
+            transform: scale(0.98);
+            background: #e8e8e8;
+        }
+
+        .player-slot.filled {
+            background: linear-gradient(135deg, #90EE90 0%, #66BB6A 100%);
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        .player-slot .placeholder {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .player-slot .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-slot .player-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .player-slot .player-stats {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .search-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: flex-end;
+        }
+
+        .search-modal.show {
+            display: flex;
+        }
+
+        .search-content {
+            background: white;
+            width: 100%;
+            max-height: 70vh;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .player-list-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .player-list-item:active {
+            background: #f5f5f5;
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .predict-btn.show {
+            display: block;
+        }
+
+        .predict-btn:active {
+            transform: scale(0.98);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.5;
+        }
+
+        .results {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .score-display {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .score-display h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .final-score {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .win-prob {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .win-prob.winner {
+            background: linear-gradient(135deg, #90EE90 0%, #66BB6A 100%);
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            background: #f5f5f5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏀 NBA Predictor - FRESH DEPLOY</h1>
+    </div>
+
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator" id="stepIndicator">
+            Schritt 1: Spiel auswählen
+        </div>
+
+        <!-- Game Selection -->
+        <div class="game-selection" id="gameSelection">
+            <h2>📅 Wähle ein Spiel</h2>
+            <div id="gameList"></div>
+        </div>
+
+        <!-- Team 1 Lineup -->
+        <div class="team-card" id="team1Card">
+            <h2 id="team1Title">🏀 Team 1 (Heim)</h2>
+            <div id="team1-lineup"></div>
+        </div>
+
+        <!-- Team 2 Lineup -->
+        <div class="team-card" id="team2Card">
+            <h2 id="team2Title">✈️ Team 2 (Auswärts)</h2>
+            <div id="team2-lineup"></div>
+        </div>
+
+        <!-- Predict Button -->
+        <button class="predict-btn" id="predictBtn" disabled>Vorhersage starten</button>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="score-display">
+                <h3>Vorhergesagtes Ergebnis</h3>
+                <div class="final-score">
+                    <div>
+                        <div style="font-size: 14px; opacity: 0.8;" id="resultTeam1Name">Team 1</div>
+                        <div id="score1">0</div>
+                    </div>
+                    <div style="opacity: 0.6;">:</div>
+                    <div>
+                        <div style="font-size: 14px; opacity: 0.8;" id="resultTeam2Name">Team 2</div>
+                        <div id="score2">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="win-prob" id="prob1">
+                <div id="prob1name">Team 1</div>
+                <div id="prob1val">0%</div>
+            </div>
+
+            <div class="win-prob" id="prob2">
+                <div id="prob2name">Team 2</div>
+                <div id="prob2val">0%</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 10px;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Konfidenz</div>
+                <div id="confidence" style="font-size: 24px; font-weight: bold; color: #667eea;">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Berechne Vorhersage...</div>
+    </div>
+
+    <!-- Search Modal -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-content">
+            <span class="close-btn" onclick="closeSearch()">×</span>
+            <h3 style="margin-bottom: 15px;">Spieler auswählen</h3>
+            <input type="text" class="search-box" id="searchBox" placeholder="Spieler suchen..." oninput="searchPlayers()">
+            <div id="playerList"></div>
+        </div>
+    </div>
+
+    <script>
+        // WICHTIG: Hier kommt deine Railway URL rein!
+        const API_URL = 'https://web-production-2867b.up.railway.app';
+        
+        // Mock-Daten als Fallback
+        const MOCK_GAMES = [
+            {
+                'game_id': '0022400001',
+                'date': '2024-10-22',
+                'time': '7:30 PM ET',
+                'team1_abbr': 'LAL',
+                'team2_abbr': 'GSW',
+                'team1_name': 'Lakers',
+                'team2_name': 'Warriors',
+                'matchup': 'LAL vs GSW'
+            },
+            {
+                'game_id': '0022400002',
+                'date': '2024-10-22',
+                'time': '8:00 PM ET',
+                'team1_abbr': 'BOS',
+                'team2_abbr': 'MIA',
+                'team1_name': 'Celtics',
+                'team2_name': 'Heat',
+                'matchup': 'BOS vs MIA'
+            },
+            {
+                'game_id': '0022400003',
+                'date': '2024-10-23',
+                'time': '7:00 PM ET',
+                'team1_abbr': 'PHX',
+                'team2_abbr': 'LAC',
+                'team1_name': 'Suns',
+                'team2_name': 'Clippers',
+                'matchup': 'PHX vs LAC'
+            },
+            {
+                'game_id': '0022400004',
+                'date': '2024-10-23',
+                'time': '8:30 PM ET',
+                'team1_abbr': 'DAL',
+                'team2_abbr': 'DEN',
+                'team1_name': 'Mavericks',
+                'team2_name': 'Nuggets',
+                'matchup': 'DAL vs DEN'
+            }
+        ];
+        
+        let selectedGame = null;
+        let team1Lineup = [];
+        let team2Lineup = [];
+        let currentTeam = 1;
+        let currentSlot = 0;
+        let allPlayers = [];
+        let availableGames = [];
+
+        // Initialize
+        async function init() {
+            console.log('🏀 FRESH DEPLOY - App startet...');
+            
+            try {
+                // Lade Spieler
+                console.log('Lade Spieler...');
+                try {
+                    const playersResponse = await fetch(`${API_URL}/players`);
+                    const playersData = await playersResponse.json();
+                    allPlayers = playersData.players;
+                    console.log('✓ Spieler geladen:', allPlayers.length);
+                } catch (error) {
+                    console.warn('⚠️ API nicht erreichbar, verwende Mock-Daten');
+                    allPlayers = [];
+                }
+                
+                // Lade Spiele
+                console.log('Lade Spiele...');
+                try {
+                    const gamesResponse = await fetch(`${API_URL}/today-games`);
+                    const gamesData = await gamesResponse.json();
+                    availableGames = gamesData.games;
+                    console.log('✓ Spiele von API geladen:', availableGames.length);
+                } catch (error) {
+                    console.warn('⚠️ API nicht erreichbar, verwende Mock-Spiele');
+                    availableGames = MOCK_GAMES;
+                    console.log('✓ Mock-Spiele geladen:', availableGames.length);
+                }
+                
+                displayGames();
+            } catch (error) {
+                console.error('❌ Fehler beim Laden:', error);
+                // Verwende Mock-Daten
+                availableGames = MOCK_GAMES;
+                displayGames();
+            }
+        }
+
+        function displayGames() {
+            const gameList = document.getElementById('gameList');
+            gameList.innerHTML = '';
+            
+            if (availableGames.length === 0) {
+                gameList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Keine Spiele verfügbar</div>';
+                return;
+            }
+            
+            availableGames.forEach(game => {
+                const div = document.createElement('div');
+                div.className = 'game-card';
+                div.innerHTML = `
+                    <div class="game-matchup">${game.matchup}</div>
+                    <div class="game-time">${game.date} • ${game.time}</div>
+                `;
+                div.onclick = () => selectGame(game, div);
+                gameList.appendChild(div);
+            });
+        }
+
+        function selectGame(game, element) {
+            document.querySelectorAll('.game-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            selectedGame = game;
+            
+            console.log('✓ Spiel gewählt:', game.matchup);
+            
+            document.getElementById('stepIndicator').textContent = 'Schritt 2: Lineup für ' + game.team1_name;
+            document.getElementById('team1Title').textContent = `🏀 ${game.team1_name} (Heim)`;
+            document.getElementById('team2Title').textContent = `✈️ ${game.team2_name} (Auswärts)`;
+            
+            document.getElementById('team1Card').classList.add('show');
+            document.getElementById('team2Card').classList.add('show');
+            document.getElementById('predictBtn').classList.add('show');
+            
+            team1Lineup = [];
+            team2Lineup = [];
+            
+            createSlots();
+            
+            document.getElementById('team1Card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createSlots() {
+            const team1Container = document.getElementById('team1-lineup');
+            const team2Container = document.getElementById('team2-lineup');
+            
+            team1Container.innerHTML = '';
+            team2Container.innerHTML = '';
+
+            for (let i = 0; i < 5; i++) {
+                team1Container.appendChild(createSlot(1, i));
+                team2Container.appendChild(createSlot(2, i));
+            }
+        }
+
+        function createSlot(team, slot) {
+            const div = document.createElement('div');
+            div.className = 'player-slot';
+            div.id = `team${team}-slot${slot}`;
+            div.innerHTML = `<div class="placeholder">Spieler ${slot + 1} auswählen</div>`;
+            div.onclick = () => openSearch(team, slot);
+            return div;
+        }
+
+        function openSearch(team, slot) {
+            if (!selectedGame) {
+                alert('Bitte erst ein Spiel wählen!');
+                return;
+            }
+            
+            currentTeam = team;
+            currentSlot = slot;
+            document.getElementById('searchModal').classList.add('show');
+            document.getElementById('searchBox').value = '';
+            document.getElementById('searchBox').focus();
+            searchPlayers();
+        }
+
+        function closeSearch() {
+            document.getElementById('searchModal').classList.remove('show');
+        }
+
+        function searchPlayers() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const filtered = allPlayers.filter(p =>
+                p.name.toLowerCase().includes(query)
+            ).slice(0, 20);
+
+            const listDiv = document.getElementById('playerList');
+            listDiv.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Keine Spieler gefunden</div>';
+                return;
+            }
+
+            filtered.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-list-item';
+                div.innerHTML = `
+                    <div style="font-weight: 600;">${player.name}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 3px;">
+                        ${player.team} • ${player.pts} PPG • ${player.type}
+                    </div>
+                `;
+                div.onclick = () => selectPlayer(player);
+                listDiv.appendChild(div);
+            });
+        }
+
+        function selectPlayer(player) {
+            const lineup = currentTeam === 1 ? team1Lineup : team2Lineup;
+            
+            if (lineup.some(p => p && p.name === player.name)) {
+                alert('Spieler bereits im Lineup!');
+                return;
+            }
+
+            lineup[currentSlot] = player;
+
+            const slot = document.getElementById(`team${currentTeam}-slot${currentSlot}`);
+            slot.classList.add('filled');
+            slot.innerHTML = `
+                <div class="player-info">
+                    <div>
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-stats">${player.team} • ${player.pts} PPG</div>
+                    </div>
+                    <div class="player-stats">${player.type}</div>
+                </div>
+            `;
+
+            closeSearch();
+            checkReady();
+            
+            const team1Full = team1Lineup.filter(p => p).length === 5;
+            const team2Full = team2Lineup.filter(p => p).length === 5;
+            
+            if (!team1Full) {
+                document.getElementById('stepIndicator').textContent = `Schritt 2: Lineup für ${selectedGame.team1_name} (${team1Lineup.filter(p => p).length}/5)`;
+            } else if (!team2Full) {
+                document.getElementById('stepIndicator').textContent = `Schritt 3: Lineup für ${selectedGame.team2_name} (${team2Lineup.filter(p => p).length}/5)`;
+            } else {
+                document.getElementById('stepIndicator').textContent = 'Schritt 4: Vorhersage starten!';
+            }
+        }
+
+        function checkReady() {
+            const team1Full = team1Lineup.filter(p => p).length === 5;
+            const team2Full = team2Lineup.filter(p => p).length === 5;
+            const ready = team1Full && team2Full && selectedGame;
+            document.getElementById('predictBtn').disabled = !ready;
+        }
+
+        async function predict() {
+            if (!selectedGame) return;
+            
+            console.log('Starte Vorhersage...');
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        team1_lineup: team1Lineup.map(p => p.name),
+                        team2_lineup: team2Lineup.map(p => p.name),
+                        team1_name: selectedGame.team1_name,
+                        team2_name: selectedGame.team2_name,
+                        team1_abbr: selectedGame.team1_abbr,
+                        team2_abbr: selectedGame.team2_abbr,
+                        game_date: selectedGame.date,
+                        team1_home: true
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('loading').classList.remove('show');
+
+                if (data.success) {
+                    showResults(data.prediction);
+                    console.log('✓ Vorhersage erfolgreich!');
+                } else {
+                    alert('Fehler: ' + data.error);
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                alert('Fehler bei Vorhersage: ' + error.message);
+            }
+        }
+
+        function showResults(pred) {
+            document.getElementById('resultTeam1Name').textContent = selectedGame.team1_name;
+            document.getElementById('resultTeam2Name').textContent = selectedGame.team2_name;
+            document.getElementById('score1').textContent = pred.team1_score;
+            document.getElementById('score2').textContent = pred.team2_score;
+            document.getElementById('prob1name').textContent = selectedGame.team1_name;
+            document.getElementById('prob2name').textContent = selectedGame.team2_name;
+            document.getElementById('prob1val').textContent = pred.team1_win_prob + '%';
+            document.getElementById('prob2val').textContent = pred.team2_win_prob + '%';
+            document.getElementById('confidence').textContent = pred.confidence + '%';
+
+            const prob1 = document.getElementById('prob1');
+            const prob2 = document.getElementById('prob2');
+            prob1.classList.remove('winner');
+            prob2.classList.remove('winner');
+
+            if (pred.team1_win_prob > pred.team2_win_prob) {
+                prob1.classList.add('winner');
+            } else {
+                prob2.classList.add('winner');
+            }
+
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.getElementById('predictBtn').onclick = predict;
+
+        console.log('=== NBA PREDICTOR FRESH DEPLOY ===');
+        init();
+    </script>
+</body>
+</html>
